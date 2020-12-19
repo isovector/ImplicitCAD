@@ -14,7 +14,7 @@ import {-# SOURCE #-} Graphics.Implicit.Primitives (Object(getImplicit))
 import Prelude (flip, (-), (*), (>), (<), (&&), (/), product, abs, (**), fmap, (.), negate, ($), const)
 
 import Graphics.Implicit.Definitions
-    (currentRounding, GetImplicitContext,  SharedObj(Empty, Full, Complement, UnionR, IntersectR, DifferenceR, Translate, Scale, Mirror, Shell, Outset, EmbedBoxedObj, WithRounding), ComponentWiseMultable((⋯/)), ℝ, minℝ )
+    (currentRounding, GetImplicitContext,  SharedObj(Empty, Full, Complement, Union, Intersect, Difference, Translate, Scale, Mirror, Shell, Outset, EmbedBoxedObj, WithRounding), ComponentWiseMultable((⋯/)), ℝ, minℝ )
 
 import Graphics.Implicit.MathUtil (infty, rmax, rmaximum, rminimum, reflect)
 
@@ -52,19 +52,19 @@ getImplicitShared _ Empty = const infty
 getImplicitShared _ Full = const $ -infty
 getImplicitShared ctx (Complement symbObj) =
   negate . getImplicit ctx symbObj
-getImplicitShared ctx (UnionR _ []) =
+getImplicitShared ctx (Union []) =
   getImplicitShared @obj ctx Empty
-getImplicitShared ctx (UnionR _ symbObjs) = \p ->
+getImplicitShared ctx (Union symbObjs) = \p ->
   let (r, ctx') = getAndClearRounding ctx
    in rminimum r $ fmap (flip (getImplicit ctx') p) symbObjs
-getImplicitShared ctx (IntersectR _ []) =
+getImplicitShared ctx (Intersect []) =
   getImplicitShared @obj ctx Full
-getImplicitShared ctx (IntersectR _ symbObjs) = \p ->
+getImplicitShared ctx (Intersect symbObjs) = \p ->
   let (r, ctx') = getAndClearRounding ctx
    in rmaximum r $ fmap (flip (getImplicit ctx') p) symbObjs
-getImplicitShared ctx (DifferenceR _ symbObj []) =
+getImplicitShared ctx (Difference symbObj []) =
   getImplicit ctx symbObj
-getImplicitShared ctx (DifferenceR _ symbObj symbObjs) =
+getImplicitShared ctx (Difference symbObj symbObjs) =
     let (r, ctx') = getAndClearRounding ctx
         headObj = getImplicit ctx' symbObj
     in

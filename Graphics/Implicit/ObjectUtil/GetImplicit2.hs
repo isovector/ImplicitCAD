@@ -10,7 +10,7 @@ module Graphics.Implicit.ObjectUtil.GetImplicit2 (getImplicit2) where
 import Prelude(cycle, (/=), uncurry, fst, Eq, zip, drop, abs, (-), (/), sqrt, (*), (+), length, fmap, (<=), (&&), (>=), (||), odd, ($), (>), filter, (<), minimum, (.), sin, cos)
 
 import Graphics.Implicit.Definitions
-    (currentRounding, GetImplicitContext,  SymbolicObj2(SquareR, Circle, PolygonR, Rotate2, Shared2), SharedObj (Empty), Obj2, ℝ2, ℝ )
+    (currentRounding, GetImplicitContext,  SymbolicObj2(Square, Circle, Polygon, Rotate2, Shared2), SharedObj (Empty), Obj2, ℝ2, ℝ )
 
 import Graphics.Implicit.MathUtil
     ( distFromLineSeg, rmaximum )
@@ -38,12 +38,12 @@ circularPairs as = zip as $ drop 1 $ cycle as
 
 getImplicit2 :: GetImplicitContext -> SymbolicObj2 -> Obj2
 -- Primitives
-getImplicit2 ctx (SquareR _ (V2 dx dy)) =
+getImplicit2 ctx (Square (V2 dx dy)) =
     \(V2 x y) -> rmaximum (currentRounding ctx) [abs (x-dx/2) - dx/2, abs (y-dy/2) - dy/2]
 getImplicit2 _ (Circle r) =
     \(V2 x y) -> sqrt (x * x + y * y) - r
 -- FIXME: stop ignoring rounding for polygons.
-getImplicit2 _ (PolygonR _ (scanUniqueCircular -> points@(_:_:_:_))) =
+getImplicit2 _ (Polygon (scanUniqueCircular -> points@(_:_:_:_))) =
     \p -> let
         pairs :: [(ℝ2,ℝ2)]
         pairs =  circularPairs points
@@ -59,7 +59,7 @@ getImplicit2 _ (PolygonR _ (scanUniqueCircular -> points@(_:_:_:_))) =
         dists = fmap (distFromLineSeg p) pairs
     in
         minimum dists * if isIn then -1 else 1
-getImplicit2 ctx (PolygonR _ _) = getImplicitShared @SymbolicObj2 ctx Empty
+getImplicit2 ctx (Polygon _) = getImplicitShared @SymbolicObj2 ctx Empty
 -- (Rounded) CSG
 getImplicit2 ctx (Rotate2 θ symbObj) =
     \(V2 x y) -> let

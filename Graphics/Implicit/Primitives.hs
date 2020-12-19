@@ -16,21 +16,20 @@ module Graphics.Implicit.Primitives (
                                      scale,
                                      outset,
                                      complement, union, intersect, difference,
-                                     unionR, intersectR, differenceR,
                                      shell,
                                      getBox,
                                      getImplicit,
-                                     extrudeR,
-                                     extrudeRM,
+                                     extrude,
+                                     extrudeM,
                                      extrudeRotateR,
                                      extrudeOnEdgeOf,
                                      sphere,
-                                     cubeR, rect3R,
+                                     cube, rect3,
                                      circle,
                                      cylinder,
                                      cylinder2,
-                                     squareR, rectR,
-                                     polygonR,
+                                     square, rect,
+                                     polygon,
                                      rotateExtrude,
                                      rotate3,
                                      rotateQ,
@@ -58,26 +57,26 @@ import Graphics.Implicit.Definitions (GetImplicitContext, ℝ, ℝ2, ℝ3, Box2,
                                                 Outset,
                                                 Mirror,
                                                 Shell,
-                                                UnionR,
-                                                DifferenceR,
-                                                IntersectR,
+                                                Union,
+                                                Difference,
+                                                Intersect,
                                                 EmbedBoxedObj
                                                ),
                                       SymbolicObj2(
-                                                   SquareR,
+                                                   Square,
                                                    Circle,
-                                                   PolygonR,
+                                                   Polygon,
                                                    Rotate2,
                                                    Shared2
                                                   ),
                                       SymbolicObj3(
-                                                   CubeR,
+                                                   Cube,
                                                    Sphere,
                                                    Cylinder,
                                                    Rotate3,
-                                                   ExtrudeR,
+                                                   Extrude,
                                                    ExtrudeRotateR,
-                                                   ExtrudeRM,
+                                                   ExtrudeM,
                                                    RotateExtrude,
                                                    ExtrudeOnEdgeOf,
                                                    Shared3
@@ -98,23 +97,21 @@ sphere ::
 sphere = Sphere
 
 -- | A rectangular prism, with rounded corners.
-rect3R ::
-    ℝ                 -- ^ Rounding of corners
-    -> ℝ3             -- ^ Bottom.. corner
+rect3
+    :: ℝ3             -- ^ Bottom.. corner
     -> ℝ3             -- ^ Top right... corner
     -> SymbolicObj3   -- ^ Resuting cube
 
-rect3R r xyz1 xyz2 = translate xyz1 $ CubeR r $ xyz2 - xyz1
+rect3 xyz1 xyz2 = translate xyz1 $ Cube $ xyz2 - xyz1
 
 -- | A rectangular prism, with rounded corners.
-cubeR ::
-    ℝ                 -- ^ Rounding of corners
-    -> Bool           -- ^ Centered?
+cube
+    :: Bool           -- ^ Centered?
     -> ℝ3             -- ^ Size
     -> SymbolicObj3   -- ^ Resuting cube. (0,0,0) is bottom left if @center = False@,
                       -- otherwise it's the center.
-cubeR r False size = CubeR r size
-cubeR r True  size = translate (fmap (negate . (/ 2)) size) $ CubeR r size
+cube False size = Cube size
+cube True  size = translate (fmap (negate . (/ 2)) size) $ Cube size
 
 
 -- | A conical frustum --- ie. a cylinder with different radii at either end.
@@ -142,30 +139,26 @@ circle ::
 circle   = Circle
 
 -- | A rectangle, with rounded corners.
-rectR ::
-    ℝ               -- ^ Rounding radius (in mm) of corners
-    -> ℝ2           -- ^ Bottom left corner
+rect
+    :: ℝ2           -- ^ Bottom left corner
     -> ℝ2           -- ^ Top right corner
     -> SymbolicObj2 -- ^ Resulting square
 
-rectR r xy1 xy2 = translate xy1 $ SquareR r $ xy2 - xy1
+rect xy1 xy2 = translate xy1 $ Square $ xy2 - xy1
 
 -- | A rectangle, with rounded corners.
-squareR ::
-    ℝ               -- ^ Rounding radius (in mm) of corners
-    -> Bool         -- ^ Centered?
+square
+    :: Bool         -- ^ Centered?
     -> ℝ2           -- ^ Size
     -> SymbolicObj2 -- ^ Resulting square (bottom right = (0,0) )
-squareR r False size = SquareR r size
-squareR r True  size = translate (fmap (negate . (/ 2)) size) $ SquareR r size
+square False size = Square size
+square True  size = translate (fmap (negate . (/ 2)) size) $ Square size
 
 -- | A 2D polygon, with rounded corners.
-polygonR ::
-    ℝ                -- ^ Rounding radius (in mm) of the polygon
-    -> [ℝ2]          -- ^ Verticies of the polygon
+polygon
+    :: [ℝ2]          -- ^ Verticies of the polygon
     -> SymbolicObj2  -- ^ Resulting polygon
-
-polygonR = PolygonR
+polygon = Polygon
 
 -- $ Shared Operations
 
@@ -271,36 +264,33 @@ shell _ s@(Shared Full) = s
 shell v s = Shared $ Shell v s
 
 -- | Rounded union
-unionR
+union
     :: Object obj vec
-    => ℝ      -- ^ The radius (in mm) of rounding
-    -> [obj]  -- ^ objects to union
+    => [obj]  -- ^ objects to union
     -> obj    -- ^ Resulting object
-unionR _ [] = Shared Empty
-unionR _ [s] = s
-unionR r ss = Shared $ UnionR r ss
+union [] = Shared Empty
+union [s] = s
+union ss = Shared $ Union ss
 
 -- | Rounded difference
-differenceR
+difference
     :: Object obj vec
-    => ℝ     -- ^ The radius (in mm) of rounding
-    -> obj   -- ^ Base object
+    => obj   -- ^ Base object
     -> [obj] -- ^ Objects to subtract from the base
     -> obj   -- ^ Resulting object
-differenceR _ s [] = s
-differenceR _ s@(Shared Empty) _ = s
-differenceR r s ss = Shared $ DifferenceR r s ss
-{-# INLINABLE differenceR #-}
+difference s [] = s
+difference s@(Shared Empty) _ = s
+difference s ss = Shared $ Difference s ss
+{-# INLINABLE difference #-}
 
 -- | Rounded minimum
-intersectR
+intersect
     :: Object obj vec
-    => ℝ     -- ^ The radius (in mm) of rounding
-    -> [obj] -- ^ Objects to intersect
+    => [obj] -- ^ Objects to intersect
     -> obj   -- ^ Resulting object
-intersectR _ [] = Shared Full
-intersectR _ [s] = s
-intersectR r ss = Shared $ IntersectR r ss
+intersect [] = Shared Full
+intersect [s] = s
+intersect ss = Shared $ Intersect ss
 
 implicit
     :: Object obj vec
@@ -325,37 +315,27 @@ instance Object SymbolicObj3 ℝ3 where
   getImplicit = getImplicit3
 
 
-union :: Object obj vec => [obj] -> obj
-union = unionR 0
-
-difference :: Object obj vec => obj -> [obj] -> obj
-difference = differenceR 0
-
-intersect :: Object obj vec => [obj] -> obj
-intersect = intersectR 0
-
 -- 3D operations
 
 -- | Extrude a 2d object upwards, with rounded corners.
-extrudeR
-    :: ℝ   -- ^ Rounding radius (in mm) of corners
-    -> SymbolicObj2
+extrude
+    :: SymbolicObj2
     -> ℝ   -- ^ Extrusion height
     -> SymbolicObj3
-extrudeR = ExtrudeR
+extrude = Extrude
 
 -- | This function is not implemented
 extrudeRotateR :: ℝ -> ℝ -> SymbolicObj2 -> ℝ -> SymbolicObj3
 extrudeRotateR = ExtrudeRotateR
 
-extrudeRM :: ℝ              -- ^ rounding radius (in mm)
-    -> Either ℝ (ℝ -> ℝ)    -- ^ twist
+extrudeM ::
+       Either ℝ (ℝ -> ℝ)    -- ^ twist
     -> ExtrudeRMScale       -- ^ scale
     -> Either ℝ2 (ℝ -> ℝ2)  -- ^ translate
     -> SymbolicObj2         -- ^ object to extrude
     -> Either ℝ (ℝ2 -> ℝ)   -- ^ height to extrude to
     -> SymbolicObj3
-extrudeRM = ExtrudeRM
+extrudeM = ExtrudeM
 
 
 rotateExtrude :: ℝ            -- ^ Angle to sweep to (in rad)

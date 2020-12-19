@@ -13,7 +13,7 @@ import Prelude (Num, (-), (+), pure, (==), max, min, foldr, (/), ($), fmap, (.),
 import {-# SOURCE #-} Graphics.Implicit.Primitives
     ( Object(getBox) )
 import Graphics.Implicit.Definitions
-    ( SharedObj(Empty, Full, Complement, UnionR, DifferenceR, IntersectR, Translate, Scale, Mirror, Shell, Outset, EmbedBoxedObj, WithRounding), ComponentWiseMultable((⋯*)), ℝ3, ℝ2, ℝ )
+    ( SharedObj(Empty, Full, Complement, Union, Difference, Intersect, Translate, Scale, Mirror, Shell, Outset, EmbedBoxedObj, WithRounding), ComponentWiseMultable((⋯*)), ℝ3, ℝ2, ℝ )
 import Graphics.Implicit.MathUtil (infty,  reflect )
 import Linear (Metric, V2(V2), V3(V3))
 import Data.Foldable (Foldable(toList))
@@ -139,9 +139,10 @@ getBoxShared Empty = emptyBox
 getBoxShared Full  = fullBox
 -- (Rounded) CSG
 getBoxShared (Complement _) = fullBox
-getBoxShared (UnionR r symbObjs) = unionBoxes r $ fmap getBox symbObjs
-getBoxShared (DifferenceR _ symbObj _)  = getBox symbObj
-getBoxShared (IntersectR _ symbObjs) =
+-- TODO(sandy): FIX ME. NEED ROUNDING HERE
+getBoxShared (Union symbObjs) = unionBoxes 0 $ fmap getBox symbObjs
+getBoxShared (Difference symbObj _)  = getBox symbObj
+getBoxShared (Intersect symbObjs) =
   intersectBoxes $
     fmap getBox symbObjs
 -- -- Simple transforms

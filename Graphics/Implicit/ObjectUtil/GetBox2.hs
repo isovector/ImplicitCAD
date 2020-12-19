@@ -7,8 +7,8 @@ module Graphics.Implicit.ObjectUtil.GetBox2 (getBox2, getBox2R) where
 import Prelude(pure, fmap, Eq, (==), (||), unzip, minimum, maximum, ($), (/), (-), (+), (*), cos, sin, sqrt, min, max, (<), (<>), pi, atan2, (==), (>), show, (&&), otherwise, error)
 
 import Graphics.Implicit.Definitions
-    ( SymbolicObj2(SquareR, Circle, PolygonR, Rotate2, Shared2),
-      SharedObj(IntersectR, Complement, UnionR, DifferenceR),
+    ( SymbolicObj2(Square, Circle, Polygon, Rotate2, Shared2),
+      SharedObj(Intersect, Complement, Union, Difference),
       Box2,
       ℝ2,
       ℝ,
@@ -25,9 +25,9 @@ import Linear (V2(V2))
 -- Get a Box2 around the given object.
 getBox2 :: SymbolicObj2 -> Box2
 -- Primitives
-getBox2 (SquareR _ size) = (pure 0, size)
+getBox2 (Square size) = (pure 0, size)
 getBox2 (Circle r) = (pure (-r), pure r)
-getBox2 (PolygonR _ points) = pointsBox points
+getBox2 (Polygon points) = pointsBox points
 -- (Rounded) CSG
 -- Simple transforms
 getBox2 (Rotate2 θ symbObj) =
@@ -40,7 +40,7 @@ getBox2 (Shared2 obj) = getBoxShared obj
 --   Note: No implementations for SquareR, Translate2, or Scale2 as they would be identical to the fallthrough.
 getBox2R :: SymbolicObj2 -> ℝ -> Box2
 getBox2R (Circle r) _ = getBox2 $ Circle r
-getBox2R (PolygonR _ points) deg =
+getBox2R (Polygon points) deg =
   let
     pointRBoxes = [ pointRBox point deg | point <- points ]
     (pointValsMin, pointValsMax) = unzip pointRBoxes
@@ -50,14 +50,16 @@ getBox2R (PolygonR _ points) deg =
   in
     (V2 (minimum pointValsX)( minimum pointValsY), V2 (maximum pointValsX) (maximum pointValsY))
 getBox2R (Shared2 (Complement symObj)) _ = getBox2 $ Shared2 (Complement symObj)
-getBox2R (Shared2 (UnionR r symObjs)) deg =
-    unionBoxes r $ fmap (`getBox2R` deg) symObjs
-getBox2R (Shared2 (DifferenceR _ symObj _)) deg = getBox2R symObj deg
-getBox2R (Shared2 (IntersectR r symObjs)) deg =
+getBox2R (Shared2 (Union symObjs)) deg =
+  -- TODO(sandy): fixme. needs r
+    unionBoxes 0 $ fmap (`getBox2R` deg) symObjs
+getBox2R (Shared2 (Difference symObj _)) deg = getBox2R symObj deg
+getBox2R (Shared2 (Intersect symObjs)) deg =
   let
     boxes = [ getBox2R obj deg| obj <- symObjs ]
   in
-    outsetBox r $ intersectBoxes boxes
+  -- TODO(sandy): fixme. needs r
+    outsetBox 0 $ intersectBoxes boxes
 -- FIXME: implement Rotate2.
 -- Fallthrough: rotate the points of the containing box. no rounding.
 getBox2R symObj deg =
@@ -65,7 +67,7 @@ getBox2R symObj deg =
     origBox = getBox2 symObj
     points  = corners origBox
   in
-    getBox2R (PolygonR 0 points) deg
+    getBox2R (Polygon points) deg
 
 data Quadrant  = UpperRight | UpperLeft | LowerRight | LowerLeft
   deriving Eq

@@ -8,7 +8,7 @@ module Graphics.Implicit.ObjectUtil.GetImplicit3 (getImplicit3) where
 import Prelude (Either(Left, Right), abs, (-), (/), (*), sqrt, (+), atan2, max, cos, minimum, ($), sin, pi, (.), Bool(True, False), ceiling, floor, pure, error, (==), otherwise)
 
 import Graphics.Implicit.Definitions
-    (currentRounding, GetImplicitContext,  ℕ, SymbolicObj3(CubeR, Sphere, Cylinder, Rotate3, ExtrudeR, ExtrudeRM, ExtrudeOnEdgeOf, RotateExtrude, Shared3, ExtrudeRotateR), Obj3, ℝ2, ℝ, fromℕtoℝ, toScaleFn )
+    (currentRounding, GetImplicitContext,  ℕ, SymbolicObj3(Cube, Sphere, Cylinder, Rotate3, Extrude, ExtrudeM, ExtrudeOnEdgeOf, RotateExtrude, Shared3, ExtrudeRotateR), Obj3, ℝ2, ℝ, fromℕtoℝ, toScaleFn )
 
 import Graphics.Implicit.MathUtil ( rmax, rmaximum )
 
@@ -27,7 +27,7 @@ default (ℝ)
 -- Get a function that describes the surface of the object.
 getImplicit3 :: GetImplicitContext -> SymbolicObj3 -> Obj3
 -- Primitives
-getImplicit3 ctx (CubeR _ (V3 dx dy dz)) =
+getImplicit3 ctx (Cube (V3 dx dy dz)) =
     \(V3 x y z) -> rmaximum (currentRounding ctx) [abs (x-dx/2) - dx/2, abs (y-dy/2) - dy/2, abs (z-dz/2) - dz/2]
 getImplicit3 _ (Sphere r) =
     \(V3 x y z) -> sqrt (x*x + y*y + z*z) - r
@@ -42,12 +42,12 @@ getImplicit3 ctx (Rotate3 q symbObj) =
     getImplicit3 ctx symbObj . Q.rotate (Q.conjugate q)
 
 -- 2D Based
-getImplicit3 ctx (ExtrudeR _ symbObj h) =
+getImplicit3 ctx (Extrude symbObj h) =
     let
         obj = getImplicit2 ctx symbObj
     in
         \(V3 x y z) -> rmax (currentRounding ctx) (obj (V2 x y)) (abs (z - h/2) - h/2)
-getImplicit3 ctx (ExtrudeRM _ twist scale translate symbObj height) =
+getImplicit3 ctx (ExtrudeM twist scale translate symbObj height) =
     let
         obj = getImplicit2 ctx symbObj
         height' (V2 x y) = case height of
