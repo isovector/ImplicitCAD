@@ -40,6 +40,7 @@ module Graphics.Implicit.Definitions (
     V2(..),
     V3(..),
     GetImplicitContext(..),
+    defaultGetImplicitContext,
     SymbolicObj2(
         Square,
         Circle,
@@ -69,7 +70,7 @@ where
 
 import GHC.Generics (Generic)
 
-import Prelude (atan2, asin, pi, (>=), signum, abs, (+), (-), RealFloat, (==), ($), flip, Semigroup((<>)), Monoid (mempty), Double, Either(Left, Right), Bool(True, False), (*), (/), fromIntegral, Float, realToFrac)
+import Prelude (Ord, Eq, atan2, asin, pi, (>=), signum, abs, (+), (-), RealFloat, (==), ($), flip, Semigroup((<>)), Monoid (mempty), Double, Either(Left, Right), Bool(True, False), (*), (/), fromIntegral, Float, realToFrac)
 
 import Data.Maybe (Maybe)
 
@@ -257,7 +258,13 @@ instance Show Blackhole where
 
 newtype GetImplicitContext = GetImplicitContext
   { currentRounding :: ℝ
+  } deriving (Eq, Ord, Show)
+
+defaultGetImplicitContext :: GetImplicitContext
+defaultGetImplicitContext = GetImplicitContext
+  { currentRounding = 0
   }
+
 
 
 -- | A symbolic 2D object format.

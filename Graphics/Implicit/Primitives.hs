@@ -19,6 +19,7 @@ module Graphics.Implicit.Primitives (
                                      shell,
                                      getBox,
                                      getImplicit,
+                                     getImplicit',
                                      extrude,
                                      extrudeM,
                                      extrudeRotateR,
@@ -40,14 +41,15 @@ module Graphics.Implicit.Primitives (
                                      implicit,
                                      emptySpace,
                                      fullSpace,
+                                      withRounding,
                                      _Shared,
                                      pattern Shared,
                                      Object
                                     ) where
 
-import Prelude(Num, (+), (-), (*), (/), (.), negate, Bool(True, False), Maybe(Just, Nothing), Either, fmap, ($))
+import Prelude(id, Num, (+), (-), (*), (/), (.), negate, Bool(True, False), Maybe(Just, Nothing), Either, fmap, ($))
 
-import Graphics.Implicit.Definitions (GetImplicitContext, ℝ, ℝ2, ℝ3, Box2,
+import Graphics.Implicit.Definitions (defaultGetImplicitContext, GetImplicitContext, ℝ, ℝ2, ℝ3, Box2,
                                       SharedObj(Empty,
                                                 Full,
                                                 Translate,
@@ -60,7 +62,8 @@ import Graphics.Implicit.Definitions (GetImplicitContext, ℝ, ℝ2, ℝ3, Box2,
                                                 Union,
                                                 Difference,
                                                 Intersect,
-                                                EmbedBoxedObj
+                                                EmbedBoxedObj,
+                                                WithRounding
                                                ),
                                       SymbolicObj2(
                                                    Square,
@@ -180,10 +183,16 @@ class Num vec => Object obj vec
         -> (vec, vec) -- ^ Bounding box
 
     -- | Get the implicit function for an object
-    getImplicit ::
+    getImplicit' ::
         GetImplicitContext
         -> obj           -- ^ Object to get implicit function of
         -> (vec -> ℝ) -- ^ Implicit function
+
+
+
+getImplicit :: Object obj vec => obj -> vec -> ℝ
+getImplicit = getImplicit' defaultGetImplicitContext
+
 
 -- | A pattern that abstracts over 'Shared2' and 'Shared3'.
 pattern Shared :: Object obj vec => SharedObj obj vec -> obj
@@ -230,6 +239,10 @@ emptySpace = Shared Empty
 -- | The object that fills the entire space
 fullSpace :: Object obj vec => obj
 fullSpace = Shared Full
+
+withRounding :: Object obj vec => ℝ -> obj -> obj
+withRounding 0 = id
+withRounding r = Shared . WithRounding r
 
 -- | Mirror an object across the hyperplane whose normal is a given
 -- vector.
@@ -305,14 +318,14 @@ instance Object SymbolicObj2 ℝ2 where
     Shared2 x -> Just x
     _         -> Nothing
   getBox      = getBox2
-  getImplicit = getImplicit2
+  getImplicit' = getImplicit2
 
 instance Object SymbolicObj3 ℝ3 where
   _Shared = prism' Shared3 $ \case
     Shared3 x -> Just x
     _         -> Nothing
   getBox      = getBox3
-  getImplicit = getImplicit3
+  getImplicit' = getImplicit3
 
 
 -- 3D operations

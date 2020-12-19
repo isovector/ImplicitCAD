@@ -9,7 +9,7 @@
 
 module Graphics.Implicit.ObjectUtil.GetImplicitShared (getImplicitShared, normalize) where
 
-import {-# SOURCE #-} Graphics.Implicit.Primitives (Object(getImplicit))
+import {-# SOURCE #-} Graphics.Implicit.Primitives (Object(getImplicit'))
 
 import Prelude (flip, (-), (*), (>), (<), (&&), (/), product, abs, (**), fmap, (.), negate, ($), const)
 
@@ -51,22 +51,22 @@ getImplicitShared
 getImplicitShared _ Empty = const infty
 getImplicitShared _ Full = const $ -infty
 getImplicitShared ctx (Complement symbObj) =
-  negate . getImplicit ctx symbObj
+  negate . getImplicit' ctx symbObj
 getImplicitShared ctx (Union []) =
   getImplicitShared @obj ctx Empty
 getImplicitShared ctx (Union symbObjs) = \p ->
   let (r, ctx') = getAndClearRounding ctx
-   in rminimum r $ fmap (flip (getImplicit ctx') p) symbObjs
+   in rminimum r $ fmap (flip (getImplicit' ctx') p) symbObjs
 getImplicitShared ctx (Intersect []) =
   getImplicitShared @obj ctx Full
 getImplicitShared ctx (Intersect symbObjs) = \p ->
   let (r, ctx') = getAndClearRounding ctx
-   in rmaximum r $ fmap (flip (getImplicit ctx') p) symbObjs
+   in rmaximum r $ fmap (flip (getImplicit' ctx') p) symbObjs
 getImplicitShared ctx (Difference symbObj []) =
-  getImplicit ctx symbObj
+  getImplicit' ctx symbObj
 getImplicitShared ctx (Difference symbObj symbObjs) =
     let (r, ctx') = getAndClearRounding ctx
-        headObj = getImplicit ctx' symbObj
+        headObj = getImplicit' ctx' symbObj
     in
       \p -> do
         let
@@ -78,19 +78,19 @@ getImplicitShared ctx (Difference symbObj symbObjs) =
 
 -- Simple transforms
 getImplicitShared ctx (Translate v symbObj) = \p ->
-  getImplicit ctx symbObj (p - v)
+  getImplicit' ctx symbObj (p - v)
 getImplicitShared ctx (Scale s symbObj) = \p ->
-  normalize s * getImplicit ctx symbObj (p ⋯/ s)
+  normalize s * getImplicit' ctx symbObj (p ⋯/ s)
 getImplicitShared ctx (Mirror v symbObj) =
-    getImplicit ctx symbObj . reflect v
+    getImplicit' ctx symbObj . reflect v
 -- Boundary mods
 getImplicitShared ctx (Shell w symbObj) = \p ->
-  abs (getImplicit ctx symbObj p) - w/2
+  abs (getImplicit' ctx symbObj p) - w/2
 getImplicitShared ctx (Outset d symbObj) = \p ->
-  getImplicit ctx symbObj p - d
+  getImplicit' ctx symbObj p - d
 -- Misc
 getImplicitShared _ (EmbedBoxedObj (obj,_)) = obj
-getImplicitShared ctx (WithRounding r obj) = getImplicit (setCurrentRounding r ctx) obj
+getImplicitShared ctx (WithRounding r obj) = getImplicit' (setCurrentRounding r ctx) obj
 
 
 getAndClearRounding :: GetImplicitContext -> (ℝ, GetImplicitContext)

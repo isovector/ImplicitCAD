@@ -11,7 +11,7 @@ module Graphics.Implicit.Export.SymbolicFormats (scad2, scad3) where
 
 import Prelude((.), fmap, Either(Left, Right), ($), (*), ($!), (-), (/), pi, error, (+), (==), take, floor, (&&), const, pure, (<>), sequenceA, (<$>))
 
-import Graphics.Implicit.Definitions(ℝ, SymbolicObj2(Shared2, SquareR, Circle, PolygonR, Rotate2), SymbolicObj3(Shared3, CubeR, Sphere, Cylinder, Rotate3, ExtrudeR, ExtrudeRotateR, ExtrudeRM, RotateExtrude, ExtrudeOnEdgeOf), isScaleID, SharedObj(Empty, Full, Complement, UnionR, IntersectR, DifferenceR, Translate, Scale, Mirror, Outset, Shell, EmbedBoxedObj), quaternionToEuler)
+import Graphics.Implicit.Definitions(ℝ, SymbolicObj2(Shared2, Square, Circle, Polygon, Rotate2), SymbolicObj3(Shared3, Cube, Sphere, Cylinder, Rotate3, Extrude, ExtrudeRotateR, ExtrudeM, RotateExtrude, ExtrudeOnEdgeOf), isScaleID, SharedObj(Empty, Full, Complement, Union, Intersect, Difference, Translate, Scale, Mirror, Outset, Shell, EmbedBoxedObj, WithRounding), quaternionToEuler)
 import Graphics.Implicit.Export.TextBuilderUtils(Text, Builder, toLazyText, fromLazyText, bf)
 
 import Control.Monad.Reader (Reader, runReader, ask)
@@ -88,11 +88,11 @@ buildShared Full = call "difference" [] [call "union" [] []]
 
 buildShared (Complement obj) = call "complement" [] [build obj]
 
-buildShared (UnionR r objs) | r == 0 = call "union" [] $ build <$> objs
+buildShared (Union objs) = call "union" [] $ build <$> objs
 
-buildShared (IntersectR r objs) | r == 0 = call "intersection" [] $ build <$> objs
+buildShared (Intersect objs) = call "intersection" [] $ build <$> objs
 
-buildShared (DifferenceR r obj objs) | r == 0 = call "difference" [] $ build <$> obj : objs
+buildShared (Difference obj objs) = call "difference" [] $ build <$> obj : objs
 
 buildShared (Translate v obj) = call "translate" (bf <$> elements v) [build obj]
 
@@ -100,16 +100,13 @@ buildShared (Scale v obj) = call "scale" (bf <$> elements v) [build obj]
 
 buildShared (Mirror v obj) = callNaked "mirror" [ "v=" <> bvect v ] [build obj]
 
-buildShared (Outset r obj) | r == 0 = call "outset" [] [build obj]
+buildShared (Outset r obj) = call "outset" [bf r] [build obj]
 
-buildShared (Shell r obj) | r == 0 = call "shell" [] [build obj]
+buildShared (Shell r obj) = call "shell" [bf r] [build obj]
 
-buildShared(UnionR _ _) = error "cannot provide roundness when exporting openscad; unsupported in target format."
-buildShared(IntersectR _ _) = error "cannot provide roundness when exporting openscad; unsupported in target format."
-buildShared(DifferenceR _ _ _) = error "cannot provide roundness when exporting openscad; unsupported in target format."
-buildShared(Outset _ _) = error "cannot provide roundness when exporting openscad; unsupported in target format."
-buildShared(Shell _ _) = error "cannot provide roundness when exporting openscad; unsupported in target format."
 buildShared(EmbedBoxedObj _) = error "cannot provide roundness when exporting openscad; unsupported in target format."
+
+buildShared (WithRounding _ _) = error "cannot provide roundness when exporting openscad; unsupported in target format."
 
 
 -- | First, the 3D objects.
@@ -117,7 +114,7 @@ buildS3 :: SymbolicObj3 -> Reader ℝ Builder
 
 buildS3 (Shared3 obj) = buildShared obj
 
-buildS3 (CubeR r (V3 w d h)) | r == 0 = call "cube" [bf w, bf d, bf h] []
+buildS3 (Cube (V3 w d h)) = call "cube" [bf w, bf d, bf h] []
 
 buildS3 (Sphere r) = callNaked "sphere" ["r = " <> bf r] []
 
@@ -130,14 +127,12 @@ buildS3 (Rotate3 q obj) =
   let (x,y,z) = quaternionToEuler q
    in call "rotate" [bf (rad2deg x), bf (rad2deg y), bf (rad2deg z)] [buildS3 obj]
 
--- FIXME: where is EmbedBoxedObj3?
-
-buildS3 (ExtrudeR r obj h) | r == 0 = callNaked "linear_extrude" ["height = " <> bf h] [buildS2 obj]
+buildS3 (Extrude obj h) = callNaked "linear_extrude" ["height = " <> bf h] [buildS2 obj]
 
 buildS3 (ExtrudeRotateR r twist obj h) | r == 0 = callNaked "linear_extrude" ["height = " <> bf h, "twist = " <> bf twist] [buildS2 obj]
 
 -- FIXME: handle scale, center.
-buildS3 (ExtrudeRM r twist scale (Left translate) obj (Left height)) | r == 0 && isScaleID scale && translate == V2 0 0 = do
+buildS3 (ExtrudeM twist scale (Left translate) obj (Left height)) | isScaleID scale && translate == V2 0 0 = do
   res <- ask
   let
     twist' = case twist of
@@ -153,10 +148,8 @@ buildS3 (ExtrudeRM r twist scale (Left translate) obj (Left height)) | r == 0 &&
 
 -- FIXME: where are RotateExtrude, ExtrudeOnEdgeOf?
 
-buildS3 CubeR{} = error "cannot provide roundness when exporting openscad; unsupported in target format."
-buildS3 ExtrudeR{} = error "cannot provide roundness when exporting openscad; unsupported in target format."
 buildS3 ExtrudeRotateR {} = error "cannot provide roundness when exporting openscad; unsupported in target format."
-buildS3 ExtrudeRM{} = error "cannot provide roundness when exporting openscad; unsupported in target format."
+buildS3 ExtrudeM{} = error "cannot provide roundness when exporting openscad; unsupported in target format."
 buildS3 RotateExtrude{} = error "cannot provide roundness when exporting openscad; unsupported in target format."
 buildS3(ExtrudeOnEdgeOf _ _) = error "cannot provide roundness when exporting openscad; unsupported in target format."
 
@@ -166,15 +159,11 @@ buildS2 :: SymbolicObj2 -> Reader ℝ Builder
 
 buildS2 (Shared2 obj) = buildShared obj
 
-buildS2 (Circle r) = call "circle" [bf r] []
+buildS2 (Square size) = call "circle" ["size = ", bvect size] []
 
-buildS2 (PolygonR r points) | r == 0 = call "polygon" (fmap bvect points) []
+buildS2 (Circle r)       = call "circle" [bf r] []
 
-buildS2 (Rotate2 r obj)     = call "rotate" [bf (rad2deg r)] [buildS2 obj]
+buildS2 (Polygon points) = call "polygon" (fmap bvect points) []
 
--- Generate errors for rounding requests. OpenSCAD does not support rounding.
-buildS2 SquareR{} = error "cannot provide roundness when exporting openscad; unsupported in target format."
-buildS2 (PolygonR _ _) = error "cannot provide roundness when exporting openscad; unsupported in target format."
-
--- FIXME: missing EmbedBoxedObj2?
+buildS2 (Rotate2 r obj)  = call "rotate" [bf (rad2deg r)] [buildS2 obj]
 

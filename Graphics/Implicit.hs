@@ -22,30 +22,28 @@ module Graphics.Implicit (
   P.mirror,
   P.complement,
   P.union,
-  P.unionR,
   P.intersect,
-  P.intersectR,
   P.difference,
-  P.differenceR,
   P.implicit,
   P.shell,
   P.outset,
   P.emptySpace,
   P.fullSpace,
+  P.withRounding,
 
   -- * 2D primitive shapes
-  P.squareR,
-  P.rectR,
+  P.square,
+  P.rect,
   P.circle,
-  P.polygonR,
+  P.polygon,
 
   -- * 2D operations
   P.rotate,
   P.pack2,
 
   -- * 3D primitive shapes
-  P.cubeR,
-  P.rect3R,
+  P.cube,
+  P.rect3,
   P.sphere,
   P.cylinder,
   P.cylinder2,
@@ -56,8 +54,8 @@ module Graphics.Implicit (
   P.pack3,
 
   -- * Extrusions into 3D
-  P.extrudeR,
-  P.extrudeRM,
+  P.extrude,
+  P.extrudeM,
   P.extrudeOnEdgeOf,
   P.rotateExtrude,
 
@@ -88,7 +86,7 @@ import Prelude(FilePath, IO)
 
 -- The primitive objects, and functions for manipulating them.
 -- MAYBEFIXME: impliment slice operation, regularPolygon and zsurface primitives.
-import Graphics.Implicit.Primitives as P (rectR, rect3R, translate, scale, mirror, complement, union, intersect, difference, unionR, intersectR, differenceR, shell, extrudeR, extrudeRM, extrudeOnEdgeOf, sphere, cubeR, circle, cylinder, cylinder2, squareR, polygonR, rotateExtrude, rotate3, rotate3V, pack3, rotate, pack2, implicit, fullSpace, emptySpace, outset, Object)
+import Graphics.Implicit.Primitives as P (withRounding, rect, rect3, translate, scale, mirror, complement, union, intersect, difference, shell, extrude, extrudeM, extrudeOnEdgeOf, sphere, cube, circle, cylinder, cylinder2, square, polygon, rotateExtrude, rotate3, rotate3V, pack3, rotate, pack2, implicit, fullSpace, emptySpace, outset, Object)
 
 -- The Extended OpenScad interpreter.
 import Graphics.Implicit.ExtOpenScad as E (runOpenscad)
@@ -99,7 +97,7 @@ import Graphics.Implicit.Definitions as W (ℝ, ℝ2, ℝ3, SymbolicObj2, Symbol
 -- Functions for writing files based on the result of operations on primitives.
 import qualified Graphics.Implicit.Export as Export (writeSVG, writeDXF2, writeSTL, writeBinSTL, writeOBJ, writeSCAD2, writeSCAD3, writeTHREEJS, writeGCodeHacklabLaser, writePNG)
 
-import Linear as L (V2(V2), V3(V3), Quaternion(Quaternion))
+import Linear as L (V2(V2), V3(V3))
 
 -- We want Export to be a bit less polymorphic
 -- (so that types will collapse nicely)
