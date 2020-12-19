@@ -13,7 +13,7 @@ import Prelude (Num, (-), (+), pure, (==), max, min, foldr, (/), ($), fmap, (.),
 import {-# SOURCE #-} Graphics.Implicit.Primitives
     ( Object(getBox) )
 import Graphics.Implicit.Definitions
-    ( SharedObj(Empty, Full, Complement, UnionR, DifferenceR, IntersectR, Translate, Scale, Mirror, Shell, Outset, EmbedBoxedObj), ComponentWiseMultable((⋯*)), ℝ3, ℝ2, ℝ )
+    ( SharedObj(Empty, Full, Complement, UnionR, DifferenceR, IntersectR, Translate, Scale, Mirror, Shell, Outset, EmbedBoxedObj, WithRounding), ComponentWiseMultable((⋯*)), ℝ3, ℝ2, ℝ )
 import Graphics.Implicit.MathUtil (infty,  reflect )
 import Linear (Metric, V2(V2), V3(V3))
 import Data.Foldable (Foldable(toList))
@@ -163,4 +163,5 @@ getBoxShared (Outset d symbObj) =
     outsetBox d $ getBox symbObj
 -- Misc
 getBoxShared (EmbedBoxedObj (_,box)) = box
+getBoxShared (WithRounding _ obj) = getBox obj
 

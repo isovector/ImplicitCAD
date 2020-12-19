@@ -5,7 +5,7 @@
 
 module Graphics.Implicit.Primitives where
 
-import Graphics.Implicit.Definitions (SymbolicObj2, SymbolicObj3, SharedObj, ℝ3, ℝ2, ℝ)
+import Graphics.Implicit.Definitions (GetImplicitContext, SymbolicObj2, SymbolicObj3, SharedObj, ℝ3, ℝ2, ℝ)
 import Control.Lens (Prism')
 import Prelude (Num)
 
@@ -14,7 +14,7 @@ import Prelude (Num)
 class Num vec => Object obj vec | obj -> vec where
     _Shared :: Prism' obj (SharedObj obj vec)
     getBox      :: obj -> (vec, vec)
-    getImplicit :: obj -> (vec -> ℝ)
+    getImplicit :: GetImplicitContext -> obj -> (vec -> ℝ)
 
 
 instance Object SymbolicObj2 ℝ2

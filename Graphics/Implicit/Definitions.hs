@@ -39,6 +39,7 @@ module Graphics.Implicit.Definitions (
     SharedObj(..),
     V2(..),
     V3(..),
+    GetImplicitContext(..),
     SymbolicObj2(
         SquareR,
         Circle,
@@ -225,6 +226,7 @@ data SharedObj obj vec
   | Outset ℝ obj
   | Shell ℝ obj
   | EmbedBoxedObj (vec -> ℝ, (vec, vec))
+  | WithRounding ℝ obj
   deriving (Generic)
 
 instance (Show obj, Show vec) => Show (SharedObj obj vec) where
@@ -244,6 +246,7 @@ instance (Show obj, Show vec) => Show (SharedObj obj vec) where
      Outset r obj            -> showCon "outset"      @| r   @| obj
      Shell r obj             -> showCon "shell"       @| r   @| obj
      EmbedBoxedObj _         -> showCon "implicit"    @| Blackhole
+     WithRounding r obj      -> showCon "withRounding" @| r   @| obj
 
 
 ------------------------------------------------------------------------------
@@ -254,6 +257,10 @@ data Blackhole = Blackhole
 instance Show Blackhole where
   show _ = "_"
 
+
+newtype GetImplicitContext = GetImplicitContext
+  { currentRounding :: ℝ
+  }
 
 
 -- | A symbolic 2D object format.

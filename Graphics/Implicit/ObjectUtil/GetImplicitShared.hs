@@ -14,7 +14,7 @@ import {-# SOURCE #-} Graphics.Implicit.Primitives (Object(getImplicit))
 import Prelude (flip, (-), (*), (>), (<), (&&), (/), product, abs, (**), fmap, (.), negate, ($), const)
 
 import Graphics.Implicit.Definitions
-    ( SharedObj(Empty, Full, Complement, UnionR, IntersectR, DifferenceR, Translate, Scale, Mirror, Shell, Outset, EmbedBoxedObj), ComponentWiseMultable((⋯/)), ℝ, minℝ )
+    (currentRounding, GetImplicitContext,  SharedObj(Empty, Full, Complement, UnionR, IntersectR, DifferenceR, Translate, Scale, Mirror, Shell, Outset, EmbedBoxedObj, WithRounding), ComponentWiseMultable((⋯/)), ℝ, minℝ )
 
 import Graphics.Implicit.MathUtil (infty, rmax, rmaximum, rminimum, reflect)
 
@@ -44,46 +44,58 @@ getImplicitShared
        , ComponentWiseMultable (f ℝ)
        , Metric f
        )
-    => SharedObj obj (f ℝ)
+    => GetImplicitContext
+    -> SharedObj obj (f ℝ)
     -> f ℝ
     -> ℝ
-getImplicitShared Empty = const infty
-getImplicitShared Full = const $ -infty
-getImplicitShared (Complement symbObj) =
-  negate . getImplicit symbObj
-getImplicitShared (UnionR _ []) =
-  getImplicitShared @obj Empty
-getImplicitShared (UnionR r symbObjs) = \p ->
-  rminimum r $ fmap (`getImplicit` p) symbObjs
-getImplicitShared (IntersectR _ []) =
-  getImplicitShared @obj Full
-getImplicitShared (IntersectR r symbObjs) = \p ->
-  rmaximum r $ fmap (`getImplicit` p) symbObjs
-getImplicitShared (DifferenceR _ symbObj []) =
-  getImplicit symbObj
-getImplicitShared (DifferenceR r symbObj symbObjs) =
-    let headObj = getImplicit symbObj
+getImplicitShared _ Empty = const infty
+getImplicitShared _ Full = const $ -infty
+getImplicitShared ctx (Complement symbObj) =
+  negate . getImplicit ctx symbObj
+getImplicitShared ctx (UnionR _ []) =
+  getImplicitShared @obj ctx Empty
+getImplicitShared ctx (UnionR _ symbObjs) = \p ->
+  let (r, ctx') = getAndClearRounding ctx
+   in rminimum r $ fmap (flip (getImplicit ctx') p) symbObjs
+getImplicitShared ctx (IntersectR _ []) =
+  getImplicitShared @obj ctx Full
+getImplicitShared ctx (IntersectR _ symbObjs) = \p ->
+  let (r, ctx') = getAndClearRounding ctx
+   in rmaximum r $ fmap (flip (getImplicit ctx') p) symbObjs
+getImplicitShared ctx (DifferenceR _ symbObj []) =
+  getImplicit ctx symbObj
+getImplicitShared ctx (DifferenceR _ symbObj symbObjs) =
+    let (r, ctx') = getAndClearRounding ctx
+        headObj = getImplicit ctx' symbObj
     in
       \p -> do
         let
           maxTail = rmaximum r
-                  $ fmap (flip getImplicitShared p . Complement) symbObjs
+                  $ fmap (flip (getImplicitShared ctx') p . Complement) symbObjs
         if maxTail > -minℝ && maxTail < minℝ
           then rmax r (headObj p) minℝ
           else rmax r (headObj p) maxTail
 
 -- Simple transforms
-getImplicitShared (Translate v symbObj) = \p ->
-  getImplicit symbObj (p - v)
-getImplicitShared (Scale s symbObj) = \p ->
-  normalize s * getImplicit symbObj (p ⋯/ s)
-getImplicitShared (Mirror v symbObj) =
-    getImplicit symbObj . reflect v
+getImplicitShared ctx (Translate v symbObj) = \p ->
+  getImplicit ctx symbObj (p - v)
+getImplicitShared ctx (Scale s symbObj) = \p ->
+  normalize s * getImplicit ctx symbObj (p ⋯/ s)
+getImplicitShared ctx (Mirror v symbObj) =
+    getImplicit ctx symbObj . reflect v
 -- Boundary mods
-getImplicitShared (Shell w symbObj) = \p ->
-  abs (getImplicit symbObj p) - w/2
-getImplicitShared (Outset d symbObj) = \p ->
-  getImplicit symbObj p - d
+getImplicitShared ctx (Shell w symbObj) = \p ->
+  abs (getImplicit ctx symbObj p) - w/2
+getImplicitShared ctx (Outset d symbObj) = \p ->
+  getImplicit ctx symbObj p - d
 -- Misc
-getImplicitShared (EmbedBoxedObj (obj,_)) = obj
+getImplicitShared _ (EmbedBoxedObj (obj,_)) = obj
+getImplicitShared ctx (WithRounding r obj) = getImplicit (setCurrentRounding r ctx) obj
+
+
+getAndClearRounding :: GetImplicitContext -> (ℝ, GetImplicitContext)
+getAndClearRounding ctx = (currentRounding ctx, ctx { currentRounding = 0 })
+
+setCurrentRounding :: ℝ -> GetImplicitContext -> GetImplicitContext
+setCurrentRounding r ctx = ctx { currentRounding = r }
 

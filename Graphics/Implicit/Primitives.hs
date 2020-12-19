@@ -48,7 +48,7 @@ module Graphics.Implicit.Primitives (
 
 import Prelude(Num, (+), (-), (*), (/), (.), negate, Bool(True, False), Maybe(Just, Nothing), Either, fmap, ($))
 
-import Graphics.Implicit.Definitions (ℝ, ℝ2, ℝ3, Box2,
+import Graphics.Implicit.Definitions (GetImplicitContext, ℝ, ℝ2, ℝ3, Box2,
                                       SharedObj(Empty,
                                                 Full,
                                                 Translate,
@@ -188,7 +188,8 @@ class Num vec => Object obj vec
 
     -- | Get the implicit function for an object
     getImplicit ::
-        obj           -- ^ Object to get implicit function of
+        GetImplicitContext
+        -> obj           -- ^ Object to get implicit function of
         -> (vec -> ℝ) -- ^ Implicit function
 
 -- | A pattern that abstracts over 'Shared2' and 'Shared3'.
