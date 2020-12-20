@@ -22,7 +22,7 @@ import Graphics.Implicit
       emptySpace,
       fullSpace,
       complement,
-      differenceR,
+      difference,
       translate,
       Object )
 import Graphics.Implicit.Primitives (rotateQ)
@@ -231,16 +231,16 @@ identitySpec = describe "identity" $ do
     complement @obj fullSpace
       =~= emptySpace
 
-  prop "difference of empty" $ \r objs ->
-    differenceR @obj r emptySpace objs
+  prop "difference of empty" $ \objs ->
+    difference @obj emptySpace objs
       =~= emptySpace
 
   prop "difference is complement" $ \objs ->
     difference @obj fullSpace objs
       =~= complement (union objs)
 
-  prop "difference of obj" $ \r obj ->
-    differenceR @obj r obj []
+  prop "difference of obj" $ \obj ->
+    difference @obj obj []
       =~= obj
 
   prop "union [a] = a" $ \obj ->
