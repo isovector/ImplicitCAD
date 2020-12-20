@@ -19,7 +19,7 @@ import Graphics.Implicit.Definitions
 import Graphics.Implicit.MathUtil (infty, rmax, rmaximum, rminimum, reflect)
 
 -- Use getImplicit2 for handling extrusion of 2D shapes to 3D.
-import Graphics.Implicit.ObjectUtil.GetBoxShared (VectorStuff(elements, uniformV))
+import Graphics.Implicit.ObjectUtil.GetBoxShared (setCurrentRounding, getAndClearRounding, VectorStuff(elements, uniformV))
 
 import Linear (Metric(dot))
 
@@ -91,11 +91,4 @@ getImplicitShared ctx (Outset d symbObj) = \p ->
 -- Misc
 getImplicitShared _ (EmbedBoxedObj (obj,_)) = obj
 getImplicitShared ctx (WithRounding r obj) = getImplicit' (setCurrentRounding r ctx) obj
-
-
-getAndClearRounding :: GetImplicitContext -> (ℝ, GetImplicitContext)
-getAndClearRounding ctx = (currentRounding ctx, ctx { currentRounding = 0 })
-
-setCurrentRounding :: ℝ -> GetImplicitContext -> GetImplicitContext
-setCurrentRounding r ctx = ctx { currentRounding = r }
 

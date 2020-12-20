@@ -245,6 +245,16 @@ emptySpace = Shared Empty
 fullSpace :: Object obj vec => obj
 fullSpace = Shared Full
 
+-- | Set the current rounding value for the given object. The rounding value is
+-- measured in units of distance, and describes the radius of rounded corners.
+--
+-- This can be used to change the shape of more primitive forms, for example,
+-- we can make a cube with rounded corners via @withRounding 5 ('cube' True
+-- 20)@.
+--
+-- Additionally, 'withRounding' can be used to set the rounding for the
+-- 'union', 'intersect' and 'difference' operations, which it controls the
+-- boundaries between how objects are combined.
 withRounding :: Object obj vec => ℝ -> obj -> obj
 withRounding 0 = id
 withRounding r = Shared . WithRounding r

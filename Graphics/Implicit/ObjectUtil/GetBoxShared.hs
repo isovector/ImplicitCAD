@@ -7,9 +7,9 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
 
-module Graphics.Implicit.ObjectUtil.GetBoxShared (VectorStuff(uniformV, elements, corners), intersectBoxes, emptyBox, pointsBox, unionBoxes, outsetBox, getBoxShared) where
+module Graphics.Implicit.ObjectUtil.GetBoxShared (VectorStuff(uniformV, elements, corners), intersectBoxes, emptyBox, pointsBox, unionBoxes, outsetBox, getBoxShared, getAndClearRounding, setCurrentRounding, clearRounding) where
 
-import Prelude (Num, (-), (+), pure, (==), max, min, foldr, (/), ($), fmap, (.), not, filter, foldMap, Fractional, Bool, Eq)
+import Prelude (snd, Num, (-), (+), pure, (==), max, min, foldr, (/), ($), fmap, (.), not, filter, foldMap, Fractional, Bool, Eq)
 import {-# SOURCE #-} Graphics.Implicit.Primitives
     ( Object(getBox') )
 import Graphics.Implicit.Definitions
@@ -140,11 +140,13 @@ getBoxShared _ Empty = emptyBox
 getBoxShared _ Full  = fullBox
 -- (Rounded) CSG
 getBoxShared _ (Complement _) = fullBox
-getBoxShared ctx (Union symbObjs) = unionBoxes (currentRounding ctx) $ fmap (getBox' ctx) symbObjs
-getBoxShared ctx (Difference symbObj _)  = getBox' ctx symbObj
+getBoxShared ctx (Union symbObjs) =
+  let (r, ctx') = getAndClearRounding ctx
+   in unionBoxes r $ fmap (getBox' ctx') symbObjs
+getBoxShared ctx (Difference symbObj _)  = getBox' (clearRounding ctx) symbObj
 getBoxShared ctx (Intersect symbObjs) =
   intersectBoxes $
-    fmap (getBox' ctx) symbObjs
+    fmap (getBox' $ clearRounding ctx) symbObjs
 -- -- Simple transforms
 getBoxShared ctx (Translate v symbObj) =
     let (a :: f a, b) = getBox' ctx symbObj
@@ -164,5 +166,14 @@ getBoxShared ctx (Outset d symbObj) =
     outsetBox d $ getBox' ctx symbObj
 -- Misc
 getBoxShared _ (EmbedBoxedObj (_,box)) = box
-getBoxShared ctx (WithRounding _ obj) = getBox' ctx obj
+getBoxShared ctx (WithRounding r obj) = getBox' (setCurrentRounding r ctx) obj
+
+getAndClearRounding :: GetImplicitContext -> (ℝ, GetImplicitContext)
+getAndClearRounding ctx = (currentRounding ctx, ctx { currentRounding = 0 })
+
+clearRounding :: GetImplicitContext -> GetImplicitContext
+clearRounding = snd . getAndClearRounding
+
+setCurrentRounding :: ℝ -> GetImplicitContext -> GetImplicitContext
+setCurrentRounding r ctx = ctx { currentRounding = r }
 
