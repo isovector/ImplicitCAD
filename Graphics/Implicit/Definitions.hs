@@ -9,6 +9,8 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE StrictData #-}
+{-# OPTIONS_GHC -funbox-strict-fields #-}
 
 -- Definitions of the types used when modeling, and a few operators.
 module Graphics.Implicit.Definitions (
