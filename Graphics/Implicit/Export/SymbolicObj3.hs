@@ -9,24 +9,22 @@ module Graphics.Implicit.Export.SymbolicObj3 (symbolicGetMesh) where
 
 import Prelude(pure, zip, length, filter, (>), ($), null, (<>), foldMap, (.), (<$>))
 
-import Graphics.Implicit.Definitions (ℝ, ℝ3, SymbolicObj3(Shared3), SharedObj(Union, WithRounding), Triangle, TriangleMesh(TriangleMesh))
+import Graphics.Implicit.Definitions (currentRounding, GetImplicitContext, ℝ, ℝ3, SymbolicObj3(Shared3), SharedObj(Union), Triangle, TriangleMesh(TriangleMesh))
 import Graphics.Implicit.Export.Render (getMesh)
 import Graphics.Implicit.Primitives (getBox)
 import Graphics.Implicit.MathUtil(box3sWithin)
 
 import Control.Arrow(first, second)
 
-symbolicGetMesh :: ℝ -> SymbolicObj3 -> TriangleMesh
-symbolicGetMesh res inputObj@(Shared3 (Union objs)) = TriangleMesh $
+symbolicGetMesh :: ℝ -> GetImplicitContext -> SymbolicObj3 -> TriangleMesh
+symbolicGetMesh res ctx inputObj@(Shared3 (Union objs)) = TriangleMesh $
     let
-        -- TODO(sandy): fixme
-        r = 0 :: ℝ
         boxes = getBox <$> objs
         boxedObjs = zip boxes objs
 
         sepFree :: [((ℝ3, ℝ3), a)] -> ([a], [a])
         sepFree ((box,obj):others) =
-            if length (filter (box3sWithin r box) boxes) > 1
+            if length (filter (box3sWithin (currentRounding ctx) box) boxes) > 1
             then first  (obj : ) $ sepFree others
             else second (obj : ) $ sepFree others
         sepFree [] = ([],[])
@@ -35,12 +33,12 @@ symbolicGetMesh res inputObj@(Shared3 (Union objs)) = TriangleMesh $
     in if null independents
           then unmesh $ getMesh (pure res) inputObj
           else if null dependants
-                  then foldMap (unmesh . symbolicGetMesh res) independents
-                  else foldMap (unmesh . symbolicGetMesh res) independents
-                       <> unmesh (symbolicGetMesh res (Shared3 $ WithRounding r $ Shared3 $ Union dependants))
+                  then foldMap (unmesh . symbolicGetMesh res ctx) independents
+                  else foldMap (unmesh . symbolicGetMesh res ctx) independents
+                       <> unmesh (symbolicGetMesh res ctx $ Shared3 $ Union dependants)
 
 -- | If all that fails, coerce and apply marching cubes :(
-symbolicGetMesh res obj = getMesh (pure res) obj
+symbolicGetMesh res _ obj = getMesh (pure res) obj
 
 unmesh :: TriangleMesh -> [Triangle]
 unmesh (TriangleMesh m) = m

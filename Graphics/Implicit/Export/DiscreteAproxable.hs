@@ -14,7 +14,7 @@ module Graphics.Implicit.Export.DiscreteAproxable (DiscreteAproxable, discreteAp
 import Prelude(pure, (-), (/), ($), (<), round, (+), maximum, abs, (*), fromIntegral, max, realToFrac, Int)
 
 -- Definitions for our number system, objects, and the things we can use to approximately represent objects.
-import Graphics.Implicit.Definitions (ℝ, ℝ2, SymbolicObj2, SymbolicObj3, Polyline, Triangle, TriangleMesh(TriangleMesh), NormedTriangleMesh(NormedTriangleMesh))
+import Graphics.Implicit.Definitions (defaultGetImplicitContext, ℝ, ℝ2, SymbolicObj2, SymbolicObj3, Polyline, Triangle, TriangleMesh(TriangleMesh), NormedTriangleMesh(NormedTriangleMesh))
 
 import Graphics.Implicit.Export.SymbolicObj3 (symbolicGetMesh)
 
@@ -45,12 +45,13 @@ class DiscreteAproxable obj aprox where
     discreteAprox :: ℝ -> obj -> aprox
 
 instance DiscreteAproxable SymbolicObj3 TriangleMesh where
-    discreteAprox = symbolicGetMesh
+    discreteAprox res = symbolicGetMesh res defaultGetImplicitContext
+
 
 instance DiscreteAproxable SymbolicObj3 NormedTriangleMesh where
     discreteAprox res obj = NormedTriangleMesh
         ([ normTriangle res (getImplicit obj) rawMesh
-            | rawMesh <- unmesh $ symbolicGetMesh res obj
+            | rawMesh <- unmesh $ symbolicGetMesh res defaultGetImplicitContext obj
          ] `using` parBuffer 32 rdeepseq)
 
 -- FIXME: way too many magic numbers.
