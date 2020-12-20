@@ -18,6 +18,7 @@ module Graphics.Implicit.Primitives (
                                      complement, union, intersect, difference,
                                      shell,
                                      getBox,
+                                     getBox',
                                      getImplicit,
                                      getImplicit',
                                      extrude,
@@ -178,17 +179,21 @@ class Num vec => Object obj vec
     _Shared :: Prism' obj (SharedObj obj vec)
 
     -- | Get the bounding box an object
-    getBox ::
-        obj           -- ^ Object to get box of
-        -> (vec, vec) -- ^ Bounding box
+    getBox'
+        :: GetImplicitContext
+        -> obj         -- ^ Object to get box of
+        -> (vec, vec)  -- ^ Bounding box
 
     -- | Get the implicit function for an object
-    getImplicit' ::
-        GetImplicitContext
-        -> obj           -- ^ Object to get implicit function of
-        -> (vec -> ℝ) -- ^ Implicit function
+    getImplicit'
+        :: GetImplicitContext
+        -> obj         -- ^ Object to get implicit function of
+        -> (vec -> ℝ)  -- ^ Implicit function
 
 
+
+getBox :: Object obj vec => obj -> (vec, vec)
+getBox = getBox' defaultGetImplicitContext
 
 getImplicit :: Object obj vec => obj -> vec -> ℝ
 getImplicit = getImplicit' defaultGetImplicitContext
@@ -317,14 +322,14 @@ instance Object SymbolicObj2 ℝ2 where
   _Shared = prism' Shared2 $ \case
     Shared2 x -> Just x
     _         -> Nothing
-  getBox      = getBox2
+  getBox'      = getBox2
   getImplicit' = getImplicit2
 
 instance Object SymbolicObj3 ℝ3 where
   _Shared = prism' Shared3 $ \case
     Shared3 x -> Just x
     _         -> Nothing
-  getBox      = getBox3
+  getBox'      = getBox3
   getImplicit' = getImplicit3
 
 
@@ -399,7 +404,7 @@ pack3 (V2 dx dy) sep objs =
         boxDropZ :: (ℝ3,ℝ3) -> (ℝ2,ℝ2)
         boxDropZ (V3 a b _,V3 d e _) = (V2 a b, V2 d e)
         withBoxes :: [(Box2, SymbolicObj3)]
-        withBoxes = fmap (\obj -> ( boxDropZ $ getBox3 obj, obj)) objs
+        withBoxes = fmap (\obj -> ( boxDropZ $ getBox obj, obj)) objs
     in case pack (V2 0 0,V2 dx dy) sep withBoxes of
             (a, []) -> Just $ union $ fmap (\(V2 x y,obj) -> translate (V3 x y 0) obj) a
             _ -> Nothing
@@ -418,7 +423,7 @@ pack2
 pack2 (V2 dx dy) sep objs =
     let
         withBoxes :: [(Box2, SymbolicObj2)]
-        withBoxes = fmap (\obj -> ( getBox2 obj, obj)) objs
+        withBoxes = fmap (\obj -> ( getBox obj, obj)) objs
     in case pack (V2 0 0,V2 dx dy) sep withBoxes of
             (a, []) -> Just $ union $ fmap (\(V2 x y,obj) -> translate (V2 x y) obj) a
             _ -> Nothing

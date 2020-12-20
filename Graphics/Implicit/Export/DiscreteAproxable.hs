@@ -16,8 +16,6 @@ import Prelude(pure, (-), (/), ($), (<), round, (+), maximum, abs, (*), fromInte
 -- Definitions for our number system, objects, and the things we can use to approximately represent objects.
 import Graphics.Implicit.Definitions (ℝ, ℝ2, SymbolicObj2, SymbolicObj3, Polyline, Triangle, TriangleMesh(TriangleMesh), NormedTriangleMesh(NormedTriangleMesh))
 
-import Graphics.Implicit.ObjectUtil (getBox2, getBox3)
-
 import Graphics.Implicit.Export.SymbolicObj3 (symbolicGetMesh)
 
 import Graphics.Implicit.Export.SymbolicObj2 (symbolicGetContour)
@@ -33,7 +31,7 @@ import Control.Parallel.Strategies (using, rdeepseq, parBuffer)
 
 import Linear ( V3(V3), V2(V2), (*^), (^/) )
 import Linear.Affine ( Affine((.+^), (.-^)) )
-import Graphics.Implicit.Primitives (getImplicit)
+import Graphics.Implicit.Primitives (getImplicit, getBox)
 
 default (ℝ)
 
@@ -63,7 +61,7 @@ instance DiscreteAproxable SymbolicObj3 DynamicImage where
             -- | Size of the image to produce.
             (V2 w h) = V2 150 150 :: ℝ2
             obj = getImplicit symbObj
-            box@(V3 x1 y1 z1, V3 _ y2 z2) = getBox3 symbObj
+            box@(V3 x1 y1 z1, V3 _ y2 z2) = getBox symbObj
             av :: ℝ -> ℝ -> ℝ
             av a b = (a+b)/2
             avY = av y1 y2
@@ -108,7 +106,7 @@ instance DiscreteAproxable SymbolicObj2 DynamicImage where
             -- | Size of the image to produce.
             V2 w h = pure 150 :: ℝ2
             obj = getImplicit symbObj
-            (p1@(V2 x1 _), p2@(V2 _ y2)) = getBox2 symbObj
+            (p1@(V2 x1 _), p2@(V2 _ y2)) = getBox symbObj
             V2 dx dy = p2 - p1
             dxy = max dx dy
             -- | passed to generateImage, it's external, and determines this type.

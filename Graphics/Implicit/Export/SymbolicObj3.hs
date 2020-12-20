@@ -11,7 +11,7 @@ import Prelude(pure, zip, length, filter, (>), ($), null, (<>), foldMap, (.), (<
 
 import Graphics.Implicit.Definitions (ℝ, ℝ3, SymbolicObj3(Shared3), SharedObj(Union, WithRounding), Triangle, TriangleMesh(TriangleMesh))
 import Graphics.Implicit.Export.Render (getMesh)
-import Graphics.Implicit.ObjectUtil (getBox3)
+import Graphics.Implicit.Primitives (getBox)
 import Graphics.Implicit.MathUtil(box3sWithin)
 
 import Control.Arrow(first, second)
@@ -21,7 +21,7 @@ symbolicGetMesh res inputObj@(Shared3 (Union objs)) = TriangleMesh $
     let
         -- TODO(sandy): fixme
         r = 0 :: ℝ
-        boxes = getBox3 <$> objs
+        boxes = getBox <$> objs
         boxedObjs = zip boxes objs
 
         sepFree :: [((ℝ3, ℝ3), a)] -> ([a], [a])

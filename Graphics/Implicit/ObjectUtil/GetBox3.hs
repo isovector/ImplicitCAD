@@ -8,7 +8,7 @@ module Graphics.Implicit.ObjectUtil.GetBox3 (getBox3) where
 import Prelude(uncurry, pure, Bool(False), Either (Left, Right), (==), max, (/), (-), (+), fmap, unzip, ($), (<$>), (.), minimum, maximum, min, (>), (*), (<), abs, either, error, const, otherwise, take, fst, snd)
 
 import Graphics.Implicit.Definitions
-    ( Fastℕ,
+    (GetImplicitContext,  Fastℕ,
       fromFastℕ,
       ExtrudeRMScale(C2, C1),
       SymbolicObj3(Shared3, Cube, Sphere, Cylinder, Rotate3, Extrude, ExtrudeOnEdgeOf, ExtrudeM, RotateExtrude, ExtrudeRotateR),
@@ -27,34 +27,34 @@ import Linear (V2(V2), V3(V3))
 -- FIXME: many variables are being ignored here. no rounding for intersect, or difference.. etc.
 
 -- Get a Box3 around the given object.
-getBox3 :: SymbolicObj3 -> Box3
+getBox3 :: GetImplicitContext -> SymbolicObj3 -> Box3
 -- Primitives
-getBox3 (Shared3 obj) = getBoxShared obj
-getBox3 (Cube size) = (pure 0, size)
-getBox3 (Sphere r) = (pure (-r), pure r)
-getBox3 (Cylinder h r1 r2) = (V3 (-r) (-r) 0, V3 r r h ) where r = max r1 r2
+getBox3 ctx (Shared3 obj) = getBoxShared ctx obj
+getBox3 _ (Cube size) = (pure 0, size)
+getBox3 _ (Sphere r) = (pure (-r), pure r)
+getBox3 _ (Cylinder h r1 r2) = (V3 (-r) (-r) 0, V3 r r h ) where r = max r1 r2
 -- (Rounded) CSG
 -- Simple transforms
-getBox3 (Rotate3 q symbObj) =
-    let box = getBox3 symbObj
+getBox3 ctx (Rotate3 q symbObj) =
+    let box = getBox3 ctx symbObj
      in pointsBox $ Q.rotate q <$> corners box
 -- Misc
 -- 2D Based
-getBox3 (Extrude symbObj h) = (V3 x1 y1 0, V3 x2 y2 h)
+getBox3 ctx (Extrude symbObj h) = (V3 x1 y1 0, V3 x2 y2 h)
     where
-        (V2 x1 y1, V2 x2 y2) = getBox2 symbObj
-getBox3 (ExtrudeOnEdgeOf symbObj1 symbObj2) =
+        (V2 x1 y1, V2 x2 y2) = getBox2 ctx symbObj
+getBox3 ctx (ExtrudeOnEdgeOf symbObj1 symbObj2) =
     let
-        (V2 ax1 ay1, V2 ax2 ay2) = getBox2 symbObj1
-        (V2 bx1 by1, V2 bx2 by2) = getBox2 symbObj2
+        (V2 ax1 ay1, V2 ax2 ay2) = getBox2 ctx symbObj1
+        (V2 bx1 by1, V2 bx2 by2) = getBox2 ctx symbObj2
     in
         (V3 (bx1+ax1) (by1+ax1) ay1, V3 (bx2+ax2) (by2+ax2) ay2)
 -- FIXME: magic numbers: 0.2 and 11.
 -- FIXME: this may use an approximation, based on sampling functions. generate a warning if the approximation part of this function is used.
 -- FIXME: re-implement the expression system, so this can recieve a function, and determine class (constant, linear)... and implement better forms of this function.
-getBox3 (ExtrudeM twist scale translate symbObj height) =
+getBox3 ctx (ExtrudeM twist scale translate symbObj height) =
     let
-        (V2 x1 y1, V2 x2 y2) = getBox2 symbObj
+        (V2 x1 y1, V2 x2 y2) = getBox2 ctx symbObj
         (dx, dy) = (x2 - x1, y2 - y1)
 
         samples :: Fastℕ
@@ -107,16 +107,16 @@ getBox3 (ExtrudeM twist scale translate symbObj height) =
         (V3 (twistXmin + tminx) (twistYmin + tminy) 0, V3 (twistXmax + tmaxx) (twistYmax + tmaxy) h)
 -- Note: Assumes x2 is always greater than x1.
 -- FIXME: Insert the above assumption as an assertion in the type system?
-getBox3 (RotateExtrude _ _ (Left (V2 xshift yshift)) _ symbObj) =
+getBox3 ctx (RotateExtrude _ _ (Left (V2 xshift yshift)) _ symbObj) =
     let
-        (V2 _ y1, V2 x2 y2) = getBox2 symbObj
+        (V2 _ y1, V2 x2 y2) = getBox2 ctx symbObj
         r = max x2 (x2 + xshift)
     in
         (V3 (-r) (-r) $ min y1 (y1 + yshift), V3 r r $ max y2 (y2 + yshift))
 -- FIXME: magic numbers: 0.1, 1.1, and 11.
 -- FIXME: this may use an approximation, based on sampling functions. generate a warning if the approximation part of this function is used.
 -- FIXME: re-implement the expression system, so this can recieve a function, and determine class (constant, linear)... and implement better forms of this function.
-getBox3 (RotateExtrude rot _ (Right f) rotate symbObj) =
+getBox3 ctx (RotateExtrude rot _ (Right f) rotate symbObj) =
     let
         samples :: Fastℕ
         samples = 11
@@ -127,7 +127,7 @@ getBox3 (RotateExtrude rot _ (Right f) rotate symbObj) =
         range :: [Fastℕ]
         range = [0, 1 .. (samples-1)]
         step = rot/fromFastℕtoℝ (samples-1)
-        (V2 x1 y1, V2 x2 y2) = getBox2 symbObj
+        (V2 x1 y1, V2 x2 y2) = getBox2 ctx symbObj
         (xrange, yrange) = unzip $ fmap unpack $ take (fromFastℕ samples) $ fmap (f . (step*) . fromFastℕtoℝ) range
         xmax = maximum xrange
         ymax = maximum yrange
@@ -145,7 +145,7 @@ getBox3 (RotateExtrude rot _ (Right f) rotate symbObj) =
     in
         (V3 (-r) (-r) $ y1 + ymin', V3 r  r  $ y2 + ymax')
 -- FIXME: add case for ExtrudeRotateR!
-getBox3 ExtrudeRotateR{} = error "ExtrudeRotateR implementation incomplete!"
+getBox3 _ ExtrudeRotateR{} = error "ExtrudeRotateR implementation incomplete!"
 
 
 unpack :: V2 a -> (a, a)

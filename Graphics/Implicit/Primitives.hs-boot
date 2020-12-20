@@ -13,10 +13,13 @@ import Prelude (Num)
 -- documentation of this class.
 class Num vec => Object obj vec | obj -> vec where
     _Shared :: Prism' obj (SharedObj obj vec)
-    getBox :: obj -> (vec, vec)
+    getBox' :: GetImplicitContext -> obj -> (vec, vec)
     getImplicit' :: GetImplicitContext -> obj -> (vec -> ℝ)
 
 
 instance Object SymbolicObj2 ℝ2
 instance Object SymbolicObj3 ℝ3
+
+getBox :: Object obj vec => obj -> (vec, vec)
+getImplicit :: Object obj vec => obj -> vec -> ℝ
 

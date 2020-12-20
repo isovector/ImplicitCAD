@@ -11,9 +11,9 @@ module Graphics.Implicit.ObjectUtil.GetBoxShared (VectorStuff(uniformV, elements
 
 import Prelude (Num, (-), (+), pure, (==), max, min, foldr, (/), ($), fmap, (.), not, filter, foldMap, Fractional, Bool, Eq)
 import {-# SOURCE #-} Graphics.Implicit.Primitives
-    ( Object(getBox) )
+    ( Object(getBox') )
 import Graphics.Implicit.Definitions
-    ( SharedObj(Empty, Full, Complement, Union, Difference, Intersect, Translate, Scale, Mirror, Shell, Outset, EmbedBoxedObj, WithRounding), ComponentWiseMultable((⋯*)), ℝ3, ℝ2, ℝ )
+    (currentRounding, GetImplicitContext,  SharedObj(Empty, Full, Complement, Union, Difference, Intersect, Translate, Scale, Mirror, Shell, Outset, EmbedBoxedObj, WithRounding), ComponentWiseMultable((⋯*)), ℝ3, ℝ2, ℝ )
 import Graphics.Implicit.MathUtil (infty,  reflect )
 import Linear (Metric, V2(V2), V3(V3))
 import Data.Foldable (Foldable(toList))
@@ -132,37 +132,37 @@ outsetBox r (a, b) = (a - uniformV r, b + uniformV r)
 getBoxShared
     :: forall obj f a
      .  ( Applicative f, Object obj (f a), VectorStuff (f a), Eq (f a), ComponentWiseMultable (f a), Fractional a, Metric f)
-    => SharedObj obj (f a)
+    => GetImplicitContext
+    -> SharedObj obj (f a)
     -> (f a, f a)
 -- Primitives
-getBoxShared Empty = emptyBox
-getBoxShared Full  = fullBox
+getBoxShared _ Empty = emptyBox
+getBoxShared _ Full  = fullBox
 -- (Rounded) CSG
-getBoxShared (Complement _) = fullBox
--- TODO(sandy): FIX ME. NEED ROUNDING HERE
-getBoxShared (Union symbObjs) = unionBoxes 0 $ fmap getBox symbObjs
-getBoxShared (Difference symbObj _)  = getBox symbObj
-getBoxShared (Intersect symbObjs) =
+getBoxShared _ (Complement _) = fullBox
+getBoxShared ctx (Union symbObjs) = unionBoxes (currentRounding ctx) $ fmap (getBox' ctx) symbObjs
+getBoxShared ctx (Difference symbObj _)  = getBox' ctx symbObj
+getBoxShared ctx (Intersect symbObjs) =
   intersectBoxes $
-    fmap getBox symbObjs
+    fmap (getBox' ctx) symbObjs
 -- -- Simple transforms
-getBoxShared (Translate v symbObj) =
-    let (a :: f a, b) = getBox symbObj
+getBoxShared ctx (Translate v symbObj) =
+    let (a :: f a, b) = getBox' ctx symbObj
      in (a + v, b + v)
-getBoxShared (Scale s symbObj) =
+getBoxShared ctx (Scale s symbObj) =
     let
-        (a :: f a, b) = getBox symbObj
+        (a :: f a, b) = getBox' ctx symbObj
         sa = s ⋯* a
         sb = s ⋯* b
      in pointsBox [sa, sb]
-getBoxShared (Mirror v symbObj) =
-  pointsBox $ fmap (reflect v) $ corners $ getBox symbObj
+getBoxShared ctx (Mirror v symbObj) =
+  pointsBox $ fmap (reflect v) $ corners $ getBox' ctx symbObj
 -- Boundary mods
-getBoxShared (Shell w symbObj) =
-    outsetBox (w/2) $ getBox symbObj
-getBoxShared (Outset d symbObj) =
-    outsetBox d $ getBox symbObj
+getBoxShared ctx (Shell w symbObj) =
+    outsetBox (w/2) $ getBox' ctx symbObj
+getBoxShared ctx (Outset d symbObj) =
+    outsetBox d $ getBox' ctx symbObj
 -- Misc
-getBoxShared (EmbedBoxedObj (_,box)) = box
-getBoxShared (WithRounding _ obj) = getBox obj
+getBoxShared _ (EmbedBoxedObj (_,box)) = box
+getBoxShared ctx (WithRounding _ obj) = getBox' ctx obj
 
