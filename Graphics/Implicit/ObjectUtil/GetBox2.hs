@@ -4,10 +4,10 @@
 
 module Graphics.Implicit.ObjectUtil.GetBox2 (getBox2, getBox2R) where
 
-import Prelude(pure, fmap, Eq, (==), (||), unzip, minimum, maximum, ($), (/), (-), (+), (*), cos, sin, sqrt, min, max, (<), (<>), pi, atan2, (==), (>), show, (&&), otherwise, error)
+import Prelude(flip, pure, fmap, Eq, (==), (||), unzip, minimum, maximum, ($), (/), (-), (+), (*), cos, sin, sqrt, min, max, (<), (<>), pi, atan2, (==), (>), show, (&&), otherwise, error)
 
 import Graphics.Implicit.Definitions
-    (defaultGetImplicitContext, GetImplicitContext,  SymbolicObj2(Square, Circle, Polygon, Rotate2, Shared2),
+    (currentRounding, GetImplicitContext,  SymbolicObj2(Square, Circle, Polygon, Rotate2, Shared2),
       SharedObj(Intersect, Complement, Union, Difference),
       Box2,
       ℝ2,
@@ -20,7 +20,7 @@ import Graphics.Implicit.ObjectUtil.GetBoxShared (emptyBox, corners, outsetBox, 
 
 -- To construct vectors of ℝs.
 import Linear (V2(V2))
-import {-# SOURCE #-} Graphics.Implicit.Primitives (getBox)
+import {-# SOURCE #-} Graphics.Implicit.Primitives (getBox', getBox)
 
 
 -- Get a Box2 around the given object.
@@ -39,9 +39,9 @@ getBox2 ctx (Shared2 obj) = getBoxShared ctx obj
 
 -- | Define a Box2 around the given object, and the space it occupies while rotating about the center point.
 --   Note: No implementations for SquareR, Translate2, or Scale2 as they would be identical to the fallthrough.
-getBox2R :: SymbolicObj2 -> ℝ -> Box2
-getBox2R (Circle r) _ = getBox2 defaultGetImplicitContext $ Circle r
-getBox2R (Polygon points) deg =
+getBox2R :: GetImplicitContext -> SymbolicObj2 -> ℝ -> Box2
+getBox2R _ (Circle r) _ = getBox $ Circle r
+getBox2R _ (Polygon points) deg =
   let
     pointRBoxes = [ pointRBox point deg | point <- points ]
     (pointValsMin, pointValsMax) = unzip pointRBoxes
@@ -50,25 +50,23 @@ getBox2R (Polygon points) deg =
     (pointValsX, pointValsY) = unzip $ fmap unbox $ pointValsMin <> pointValsMax
   in
     (V2 (minimum pointValsX)( minimum pointValsY), V2 (maximum pointValsX) (maximum pointValsY))
-getBox2R (Shared2 (Complement symObj)) _ = getBox $ Shared2 (Complement symObj)
-getBox2R (Shared2 (Union symObjs)) deg =
-  -- TODO(sandy): fixme. needs r
-    unionBoxes 0 $ fmap (`getBox2R` deg) symObjs
-getBox2R (Shared2 (Difference symObj _)) deg = getBox2R symObj deg
-getBox2R (Shared2 (Intersect symObjs)) deg =
+getBox2R ctx (Shared2 (Complement symObj)) _ = getBox' ctx $ Shared2 (Complement symObj)
+getBox2R ctx (Shared2 (Union symObjs)) deg =
+    unionBoxes (currentRounding ctx) $ fmap (flip (getBox2R ctx) deg) symObjs
+getBox2R ctx (Shared2 (Difference symObj _)) deg = getBox2R ctx symObj deg
+getBox2R ctx (Shared2 (Intersect symObjs)) deg =
   let
-    boxes = [ getBox2R obj deg| obj <- symObjs ]
+    boxes = [ getBox2R ctx obj deg| obj <- symObjs ]
   in
-  -- TODO(sandy): fixme. needs r
-    outsetBox 0 $ intersectBoxes boxes
+    outsetBox (currentRounding ctx) $ intersectBoxes boxes
 -- FIXME: implement Rotate2.
 -- Fallthrough: rotate the points of the containing box. no rounding.
-getBox2R symObj deg =
+getBox2R ctx symObj deg =
   let
     origBox = getBox symObj
     points  = corners origBox
   in
-    getBox2R (Polygon points) deg
+    getBox2R ctx (Polygon points) deg
 
 data Quadrant  = UpperRight | UpperLeft | LowerRight | LowerLeft
   deriving Eq

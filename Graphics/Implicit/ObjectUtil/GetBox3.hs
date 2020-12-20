@@ -8,7 +8,7 @@ module Graphics.Implicit.ObjectUtil.GetBox3 (getBox3) where
 import Prelude(uncurry, pure, Bool(False), Either (Left, Right), (==), max, (/), (-), (+), fmap, unzip, ($), (<$>), (.), minimum, maximum, min, (>), (*), (<), abs, either, error, const, otherwise, take, fst, snd)
 
 import Graphics.Implicit.Definitions
-    (GetImplicitContext,  Fastℕ,
+    (defaultGetImplicitContext, GetImplicitContext,  Fastℕ,
       fromFastℕ,
       ExtrudeRMScale(C2, C1),
       SymbolicObj3(Shared3, Cube, Sphere, Cylinder, Rotate3, Extrude, ExtrudeOnEdgeOf, ExtrudeM, RotateExtrude, ExtrudeRotateR),
@@ -87,8 +87,8 @@ getBox3 ctx (ExtrudeM twist scale translate symbObj height) =
           in case twist of
             Left twval -> if twval == 0
                           then (smin scalex' x1, smin scaley' y1, smax scalex' x2, smax scaley' y2)
-                          else scaleEach $ getBox2R symbObj twval
-            Right _  -> scaleEach $ getBox2R symbObj 360 -- we can't range functions yet, so assume a full circle.
+                          else scaleEach $ getBox2R defaultGetImplicitContext symbObj twval
+            Right _  -> scaleEach $ getBox2R defaultGetImplicitContext symbObj 360 -- we can't range functions yet, so assume a full circle.
 
         (tminx, tmaxx, tminy, tmaxy) =
           let
