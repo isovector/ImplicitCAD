@@ -16,7 +16,7 @@
 import Prelude (Read(readsPrec), Maybe(Just, Nothing), IO, Bool(True, False), FilePath, Show, Eq, String, (<>), ($), (*), (/), (==), (>), (**), (-), readFile, minimum, drop, error, fst, min, sqrt, tail, take, length, putStrLn, show, (>>=), lookup, return, unlines, filter, not, null, (||), (&&), (.), print)
 
 -- Our Extended OpenScad interpreter, and functions to write out files in designated formats.
-import Graphics.Implicit (unionR, runOpenscad, writeSVG, writeDXF2, writeBinSTL, writeSTL, writeOBJ, writeSCAD2, writeSCAD3, writeGCodeHacklabLaser, writePNG2, writePNG3)
+import Graphics.Implicit (union, runOpenscad, writeSVG, writeDXF2, writeBinSTL, writeSTL, writeOBJ, writeSCAD2, writeSCAD3, writeGCodeHacklabLaser, writePNG2, writePNG3)
 
 -- Definitions of the datatypes used for 2D objects, 3D objects, and for defining the resolution to raytrace at.
 import Graphics.Implicit.Definitions (SymbolicObj2, SymbolicObj3, ℝ)
@@ -52,7 +52,7 @@ import System.FilePath (splitExtension)
 import System.IO (Handle, hPutStr, stdout, stderr, openFile, IOMode(WriteMode))
 
 import Data.Text.Lazy (Text, unpack)
-import Graphics.Implicit.Primitives (Object(getBox))
+import Graphics.Implicit.Primitives (getBox)
 
 -- | Our command line options.
 data ExtOpenScadOpts = ExtOpenScadOpts
@@ -198,7 +198,7 @@ getRes (lookupVarIn "$res" -> Just (ONum res), _, _, _) = res
 --   FIXME: magic numbers.
 getRes (vars, _, obj:objs, _) =
     let
-        (V3 x1 y1 z1, V3 x2 y2 z2) = getBox (unionR 0 (obj:objs))
+        (V3 x1 y1 z1, V3 x2 y2 z2) = getBox (union (obj:objs))
         (V3 x y z) = V3 (x2-x1) (y2-y1) (z2-z1)
     in case fromMaybe (ONum 1) $ lookupVarIn "$quality" vars of
         ONum qual | qual > 0  -> min (minimum [x,y,z]/2) ((x*y*z/qual)**(1/3) / 22)
@@ -207,7 +207,7 @@ getRes (vars, _, obj:objs, _) =
 --   FIXME: magic numbers.
 getRes (vars, obj:objs, _, _) =
     let
-        (p1,p2) = getBox (unionR 0 (obj:objs))
+        (p1,p2) = getBox (union (obj:objs))
         (V2 x y) = p2 .-. p1
     in case fromMaybe (ONum 1) $ lookupVarIn "$quality" vars of
         ONum qual | qual > 0 -> min (min x y/2) (sqrt(x*y/qual) / 30)
@@ -308,7 +308,7 @@ run rawargs = do
                      (outputFile args)
             target = if null objs
                      then obj
-                     else unionR 0 (obj:objs)
+                     else union (obj:objs)
 
         if quiet args
           then return ()
@@ -332,7 +332,7 @@ run rawargs = do
                      (outputFile args)
             target = if null objs
                      then obj
-                     else unionR 0 (obj:objs)
+                     else union (obj:objs)
 
         if quiet args
           then return ()
